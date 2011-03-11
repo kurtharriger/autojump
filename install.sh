@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -x
+#set -x
 #Copyright Joel Schaerer 2008, 2009
 #This file is part of autojump
 
@@ -21,6 +22,7 @@ function show_help {
 
 # Default install directory.
 prefix=/usr
+userMode=true
 
 # Command line parsing
 while true; do
@@ -40,14 +42,43 @@ done
 
 echo "Installing to ${prefix} ..."
 
+
+# sanity check prefix value
+mkdir -p ${prefix}
+
+if [ ! -d ${prefix} ]; then
+  echo "Failed to create directory ( ${prefix} )"
+  exit 1
+fi
+
+if [ ! -w ${prefix} ]; then
+  echo "Do not have permission to write to ${prefix}"
+fi
+
+# User/Root?
+if [ `id -u` = 0 ]; then
+  userMode = false
+fi
+
 # INSTALL AUTOJUMP
-sudo mkdir -p ${prefix}/share/autojump/
-sudo mkdir -p ${prefix}/bin/
-sudo mkdir -p ${prefix}/share/man/man1/
-sudo cp icon.png ${prefix}/share/autojump/
-sudo cp jumpapplet ${prefix}/bin/
-sudo cp autojump ${prefix}/bin/
-sudo cp autojump.1 ${prefix}/share/man/man1/
+
+if $userMode ; then 
+  mkdir -p ${prefix}/share/autojump/
+  mkdir -p ${prefix}/bin/
+  mkdir -p ${prefix}/share/man/man1/
+  cp icon.png ${prefix}/share/autojump/
+  cp jumpapplet ${prefix}/bin/
+  cp autojump ${prefix}/bin/
+  cp autojump.1 ${prefix}/share/man/man1/
+else 
+  sudo mkdir -p ${prefix}/share/autojump/
+  sudo mkdir -p ${prefix}/bin/
+  sudo mkdir -p ${prefix}/share/man/man1/
+  sudo cp icon.png ${prefix}/share/autojump/
+  sudo cp jumpapplet ${prefix}/bin/
+  sudo cp autojump ${prefix}/bin/
+  sudo cp autojump.1 ${prefix}/share/man/man1/
+fi
 
 if [ -d "/etc/profile.d" ]; then
     sudo cp autojump.bash /etc/profile.d/
@@ -69,12 +100,16 @@ else
     echo "Your distribution does not have a /etc/profile.d directory, the default that we install one of the scripts to. Would you like us to copy it into your ~/.bashrc file to make it work? (If you have done this once before, delete the old version before doing it again.) [y/n]"
     read ans
     if [ ${#ans} -gt 0 ]; then
-	     if [ $ans = "y" -o $ans = "Y" -o $ans = "yes" -o $ans = "Yes" ]; then
+       if [ $ans = "y" -o $ans = "Y" -o $ans = "yes" -o $ans = "Yes" ]; then
 
                 # Answered yes. Go ahead and add the autojump code
-	        echo "" >> ~/.bashrc
-	        echo "#autojump" >> ~/.bashrc
-	        cat autojump.bash | grep -v "^#" >> ~/.bashrc
+                cp autojump.zsh ${prefix}/bin/
+                cp autojump.bash ${prefix}/bin/
+                echo -e "" >> ~/.bashrc
+                echo -e "#autojump" >> ~/.bashrc
+                echo -e "PATH=${prefix}/bin/:$PATH" >>  ~/.bashrc
+                grep -v "^#" autojump.sh  | sed "s_/etc/profile.d_${prefix}/bin_g" | sed "s_${HOME}_~_g"   >> ~/.bashrc
+                echo -e "#end of autojump" >> ~/.bashrc
 
                 # Since OSX uses .bash_profile, we need to make sure that .bashrc is properly sourced.
                 # Makes the assumption that if they have a line: source ~/.bashrc or . ~/.bashrc, that
@@ -87,9 +122,9 @@ else
                     echo -e "if [ -f ~/.bashrc ]; then\n  . ~/.bashrc\nfi" >> ~/.bash_profile
                 fi
                 echo "You need to source your ~/.bashrc (source ~/.bashrc) before you can start using autojump."
-	     else
-	         echo "Then you need to put autojump.sh, or the code from it, somewhere where it will get read. Good luck!"
-	     fi
+       else
+           echo "Then you need to put autojump.sh, or the code from it, somewhere where it will get read. Good luck!"
+       fi
     else
         echo "Then you need to put autojump.sh, or the code from it, somewhere where it will get read. Good luck!"
     fi

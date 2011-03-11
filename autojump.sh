@@ -15,7 +15,7 @@
 #You should have received a copy of the GNU General Public License
 #along with autojump.  If not, see <http://www.gnu.org/licenses/>.
 if [ "$BASH_VERSION" ] && [ -n "$PS1" ] && echo $SHELLOPTS | grep -v posix >>/dev/null; then
-	. /etc/profile.d/autojump.bash
+  . /etc/profile.d/autojump.bash
 elif [ "$ZSH_VERSION" ] && [ -n "$PS1" ]; then
-    . /etc/profile.d/autojump.zsh
+  . /etc/profile.d/autojump.zsh
 fi
