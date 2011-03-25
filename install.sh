@@ -80,7 +80,7 @@ else
   sudo cp autojump.1 ${prefix}/share/man/man1/
 fi
 
-if [ -d "/etc/profile.d" ]; then
+if [ -d "/etc/profile.d" -a userMode = false]; then
     sudo cp autojump.bash /etc/profile.d/
     sudo cp autojump.sh /etc/profile.d/
 
