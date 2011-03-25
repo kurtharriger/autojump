@@ -107,7 +107,7 @@ else
                 cp autojump.bash ${prefix}/bin/
                 echo -e "" >> ~/.bashrc
                 echo -e "#autojump" >> ~/.bashrc
-                echo -e "PATH=${prefix}/bin/:$PATH" >>  ~/.bashrc
+                echo -e "export PATH=${prefix}/bin/:\$PATH" >>  ~/.bashrc
                 grep -v "^#" autojump.sh  | sed "s_/etc/profile.d_${prefix}/bin_g" | sed "s_${HOME}_~_g"   >> ~/.bashrc
                 echo -e "#end of autojump" >> ~/.bashrc
 
@@ -115,7 +115,8 @@ else
                 # Makes the assumption that if they have a line: source ~/.bashrc or . ~/.bashrc, that
                 # .bashrc has been properly sourced and you don't need to add it.
                 OS=`uname`
-                if [ $OS == 'Darwin' -a `grep -c "^[[:space:]]*source\|\. ~/\.bashrc[[:space:]]*$" ~/.bash_profile` -eq 0 ]; then
+                SRCED=`grep -c "^[[:space:]]*source\|\. ~/\.bashrc[[:space:]]*$" ~/.bash_profile 2>>/dev/null`
+                if [ $OS == 'Darwin' -a $SRCED -eq 0 ]; then
                     echo "You are using OSX and your .bash_profile doesn't seem to be sourcing .bashrc"
                     echo "Adding source ~/.bashrc to your bashrc"
                     echo -e "\n# Get the aliases and functions" >> ~/.bash_profile
