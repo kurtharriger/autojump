@@ -43,8 +43,24 @@ then
 fi
 
 AUTOJUMP='{ [[ "$AUTOJUMP_HOME" == "$HOME" ]] && (autojump -a "$(pwd -P)"&)>/dev/null 2>>${AUTOJUMP_DATA_DIR}/autojump_errors;} 2>/dev/null'
+cdir="${AUTOJUMP_DATA_DIR}/.autojump_pwds"
+is_cdir_valid='touch ${cdir}'
+uniq_by_1st_field='{ awk '\''!x[$1]++'\'' ${cdir} > ${cdir}.new ; mv ${cdir}.new ${cdir};} 2>>/dev/null'
+update_path_by_pid='( [ `grep -c $$ ${cdir}` -gt 0 ] && sed -i "s_($$\s*)\S*_\1`pwd -P`_" ${cdir} )'
+add_path_with_pid='( echo "$$ `pwd -P`" >> ${cdir} )'
+#AUTOJUMP_writePWD='{ ${update_path_by_pid} || ${add_path_with_pid} } 2>/dev/null'
+AUTOJUMP_writePWD=' if [ `grep -c $$ ${cdir}` -gt 0 ]; then sed -rien "s_($$\s*)\S*_\1`pwd`_" ${cdir}; else echo "$$ `pwd -P`" >> ${cdir}; fi '
 if [[ ! $PROMPT_COMMAND =~ autojump ]]; then
-  export PROMPT_COMMAND="${PROMPT_COMMAND:-:} ; $AUTOJUMP"
+  export PROMPT_COMMAND="${PROMPT_COMMAND:-:} ; $AUTOJUMP ;\
+    ${is_cdir_valid}; ${uniq_by_1st_field}; ${AUTOJUMP_writePWD}"
 fi 
 alias jumpstat="autojump --stat"
-function j { new_path="$(autojump $@)";if [ -n "$new_path" ]; then echo -e "\\033[31m${new_path}\\033[0m"; cd "$new_path";else false; fi }
+function j {
+  new_path="$(autojump $@)";
+  if [ -n "$new_path" ]; then
+    echo -e "\\033[31m${new_path}\\033[0m";
+    cd "$new_path";
+  else
+    false;
+  fi
+}
