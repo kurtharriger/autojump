@@ -43,22 +43,36 @@ then
 fi
 
 AUTOJUMP='{ [[ "$AUTOJUMP_HOME" == "$HOME" ]] && (autojump -a "$(pwd -P)"&)>/dev/null 2>>${AUTOJUMP_DATA_DIR}/autojump_errors;} 2>/dev/null'
+
 cdir="${AUTOJUMP_DATA_DIR}/.autojump_pwds"
-is_cdir_valid='touch ${cdir}'
-uniq_by_1st_field='{ awk '\''!x[$1]++'\'' ${cdir} > ${cdir}.new ; mv ${cdir}.new ${cdir};} 2>>/dev/null'
-update_path_by_pid='( [ `grep -c $$ ${cdir}` -gt 0 ] && sed -i "s_($$\s*)\S*_\1`pwd -P`_" ${cdir} )'
 AUTOJUMP_writePWD()
 {
-  if [ `grep -c $$ ${cdir}` -gt 0 ]; then
-    sed -rien "s_($$\s*)\S*_\1`pwd`_" ${cdir};
-  else
-    echo "$$ `pwd -P`" >> ${cdir};
-  fi 
+  # make sure ${cdir} is always available to read..
+  touch ${cdir}
+
+  # unique pwds by first field..
+  awk '!x[$1]++' ${cdir} > ${cdir}.new 2>/dev/null
+  mv ${cdir}.new ${cdir}
+  
+  # refresh ${cdir} with live terminals
+  live_terminals=(`ps o pid,tty,command -U $USER | grep "[-]bash" | awk '{ print $1 }'`)
+  for term in ${live_terminals[@]}
+  do
+    if [[ "$$" != "$term" ]] ; then
+      grep $term ${cdir} >> ${cdir}.new 2>/dev/null
+    fi
+  done
+
+  # delete old n add new terminal path
+  echo "$$ `pwd -P`" >> ${cdir}.new 2>/dev/null
+  mv ${cdir}.new ${cdir}
+  return 0
 }
+
 if [[ ! $PROMPT_COMMAND =~ autojump ]]; then
-  export PROMPT_COMMAND="${PROMPT_COMMAND:-:} ; $AUTOJUMP ;\
-    ${is_cdir_valid}; ${uniq_by_1st_field}; \$(AUTOJUMP_writePWD)"
+  export PROMPT_COMMAND="${PROMPT_COMMAND:-:} ; $AUTOJUMP ; \$(AUTOJUMP_writePWD)"
 fi 
+
 alias jumpstat="autojump --stat"
 function j {
   new_path="$(autojump $@)";
