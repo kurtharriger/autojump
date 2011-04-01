@@ -54,9 +54,9 @@ AUTOJUMP_writePWD()
   awk '!x[$1]++' ${cdir} > ${cdir}.new 2>/dev/null
   mv ${cdir}.new ${cdir}
   
-  # refresh ${cdir} with live terminals
-  live_terminals=(`ps o pid,tty,command -U $USER | grep "[-]bash" | awk '{ print $1 }'`)
-  for term in ${live_terminals[@]}
+  # refresh ${cdir} with running terminals
+  running_terminals=$(ps o pid,tty,command -U $USER | grep "[-]bash" | awk '{ print $1 }')
+  for term in ${running_terminals[@]}
   do
     if [[ "$$" != "$term" ]] ; then
       grep $term ${cdir} >> ${cdir}.new 2>/dev/null
